@@ -314,9 +314,17 @@ impl OAuthData {
             }
             AuthorizationType::Request => {}
         }
+
         let signature = self.signature_method.sign(&req, key);
         req.parameters.insert("oauth_signature".into(), signature);
-        format!("OAuth {}", encode_auth_parameters(&req.parameters))
+
+        let mut oauth_auth_params = BTreeMap::new();
+        for (k,v) in req.parameters {
+            if k.starts_with("oauth_") {
+                oauth_auth_params.insert(k, v);
+            }
+        }
+        format!("OAuth {}", encode_auth_parameters(&oauth_auth_params))
     }
 
     /// Get the OAuth parameters.
@@ -331,6 +339,7 @@ impl OAuthData {
             "oauth_signature_method".into(),
             self.signature_method.to_string(),
         );
+        params.insert("oauth_version".into(), String::from("1.0"));
         params.insert("oauth_timestamp".into(), timestamp().to_string());
         params.insert("oauth_nonce".into(), self.nonce.0.clone());
         params
